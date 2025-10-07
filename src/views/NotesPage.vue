@@ -12,7 +12,12 @@
         <div class="category-header">
           <h2>分类</h2>
           <div class="header-actions">
-            <NButton type="primary" quaternary circle>
+            <NButton
+              type="primary"
+              quaternary
+              circle
+              @click="showAddCategoryDialog"
+            >
               <template #icon>
                 <CirclePlus />
               </template>
@@ -26,7 +31,7 @@
         <div class="category-header">
           <h2>标签</h2>
           <div class="header-actions">
-            <NButton type="primary" quaternary circle>
+            <NButton type="primary" quaternary circle @click="showAddTagDialog">
               <template #icon>
                 <CirclePlus />
               </template>
@@ -114,6 +119,64 @@
       </div>
     </div>
   </NLayout>
+
+  <!-- 添加分类弹窗 -->
+  <NModal
+    v-model:show="isAddCategoryDialogVisible"
+    title="添加分类"
+    :closable="false"
+    :mask-closable="false"
+    preset="dialog"
+  >
+    <div style="padding: 20px 0">
+      <NInput
+        v-model:value="newCategoryName"
+        placeholder="请输入分类名称"
+        :maxlength="20"
+        show-count
+        @keyup.enter="handleAddCategory"
+      />
+    </div>
+    <template #action>
+      <NButton @click="isAddCategoryDialogVisible = false">取消</NButton>
+      <NButton
+        type="primary"
+        @click="handleAddCategory"
+        :disabled="!newCategoryName.trim()"
+      >
+        确定
+      </NButton>
+    </template>
+  </NModal>
+
+  <!-- 添加标签弹窗 -->
+  <NModal
+    v-model:show="isAddTagDialogVisible"
+    title="添加标签"
+    :closable="false"
+    :mask-closable="false"
+    preset="dialog"
+  >
+    <div style="padding: 20px 0">
+      <NInput
+        v-model:value="newTagName"
+        placeholder="请输入标签名称"
+        :maxlength="20"
+        show-count
+        @keyup.enter="handleAddTag"
+      />
+    </div>
+    <template #action>
+      <NButton @click="isAddTagDialogVisible = false">取消</NButton>
+      <NButton
+        type="primary"
+        @click="handleAddTag"
+        :disabled="!newTagName.trim()"
+      >
+        确定
+      </NButton>
+    </template>
+  </NModal>
 </template>
 
 <script setup lang="ts">
@@ -124,6 +187,8 @@ import {
   NLayoutContent,
   NButton,
   NInput,
+  NDialog,
+  NModal,
 } from "naive-ui";
 import {
   Search,
@@ -154,6 +219,14 @@ const isEditing = ref(false);
 
 // 当前选中的笔记
 const selectedNote = ref<Note | null>(null);
+
+// 添加分类相关的变量
+const isAddCategoryDialogVisible = ref(false);
+const newCategoryName = ref("");
+
+// 添加标签相关的变量
+const isAddTagDialogVisible = ref(false);
+const newTagName = ref("");
 
 // 切换到卡片模式
 const switchToGridMode = () => {
@@ -200,6 +273,36 @@ const handleNewNote = () => {
   // 进入编辑模式
   isEditing.value = true;
   selectedNote.value = newNote;
+};
+
+// 显示添加分类弹窗
+const showAddCategoryDialog = () => {
+  newCategoryName.value = "";
+  isAddCategoryDialogVisible.value = true;
+};
+
+// 显示添加标签弹窗
+const showAddTagDialog = () => {
+  newTagName.value = "";
+  isAddTagDialogVisible.value = true;
+};
+
+// 处理添加分类
+const handleAddCategory = () => {
+  const categoryName = newCategoryName.value.trim();
+  if (categoryName) {
+    notesStore.createCategory(categoryName);
+    isAddCategoryDialogVisible.value = false;
+  }
+};
+
+// 处理添加标签
+const handleAddTag = () => {
+  const tagName = newTagName.value.trim();
+  if (tagName) {
+    notesStore.addTag(tagName);
+    isAddTagDialogVisible.value = false;
+  }
 };
 </script>
 
