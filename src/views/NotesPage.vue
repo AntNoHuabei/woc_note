@@ -177,6 +177,10 @@ const handleNoteClick = (note: Note) => {
 const exitEditMode = () => {
   isEditing.value = false;
   selectedNote.value = null;
+  // 自动保存到数据库
+  notesStore.saveToDatabase().catch((error) => {
+    console.error("自动保存失败:", error);
+  });
 };
 
 // 处理新建笔记事件
@@ -261,7 +265,6 @@ const handleNewNote = () => {
 
 .toolbar-right {
   display: flex;
-  gap: 16px;
 }
 
 .notes-content {

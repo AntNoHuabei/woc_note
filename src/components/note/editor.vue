@@ -125,7 +125,7 @@ const toggleTag = (tag: string) => {
   if (!note.value) return;
 
   // 创建新数组避免直接修改原数组
-  const currentTags = [...note.value.tags];
+  const currentTags = note.value.tags
   const tagIndex = currentTags.indexOf(tag);
 
   if (tagIndex > -1) {
@@ -133,7 +133,7 @@ const toggleTag = (tag: string) => {
   } else {
     currentTags.push(tag);
   }
-  note.value.tags = currentTags;
+  //note.value.tags = currentTags;
   note.value.updateTime = new Date().toLocaleString("zh-CN");
   // notesStore.updateNote(note.value.id, {
   //   tags: currentTags,
