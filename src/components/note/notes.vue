@@ -14,17 +14,30 @@
         v-for="note in modelValue"
         :key="note.id"
         class="note-card"
-        @click="handleNoteClick(note)"
       >
         <div class="note-header">
           <h3 class="note-title">{{ note.title }}</h3>
-          <p class="note-time">{{ formatTime(note.updateTime) }}</p>
+          <div class="note-meta">
+            <span v-if="getCategoryName(note.categoryId)" class="category-badge">
+              {{ getCategoryName(note.categoryId) }}
+            </span>
+            <span class="note-time">{{ formatTime(note.updateTime) }}</span>
+          </div>
         </div>
-        <div class="note-content">
+        <div class="note-content" @click.stop="handleNoteClick(note)">
           {{ stripMarkdown(note.content).substring(0, 100) }}...
         </div>
         <div class="note-tags">
           <span v-for="tag in note.tags" :key="tag" class="tag">{{ tag }}</span>
+        </div>
+        <div class="note-actions">
+          <button 
+            class="delete-button"
+            @click.stop="showDeleteDialog(note)"
+            title="删除笔记"
+          >
+            <Delete :size="18" />
+          </button>
         </div>
       </div>
     </div>
@@ -41,10 +54,14 @@
         v-for="note in modelValue"
         :key="note.id"
         class="note-list-item"
-        @click="handleNoteClick(note)"
       >
-        <div class="note-list-main">
-          <h3 class="note-list-title">{{ note.title }}</h3>
+        <div class="note-list-main" @click.stop="handleNoteClick(note)">
+          <div class="note-list-header">
+            <h3 class="note-list-title">{{ note.title }}</h3>
+            <span v-if="getCategoryName(note.categoryId)" class="category-badge">
+              {{ getCategoryName(note.categoryId) }}
+            </span>
+          </div>
           <p class="note-list-content">
             {{ stripMarkdown(note.content).substring(0, 150) }}...
           </p>
@@ -57,16 +74,46 @@
             }}</span>
           </div>
         </div>
+        <div class="note-list-actions">
+          <button 
+            class="delete-button"
+            @click.stop="showDeleteDialog(note)"
+            title="删除笔记"
+          >
+            <Delete :size="18" />
+          </button>
+        </div>
       </div>
     </div>
+
+    <!-- 删除确认对话框 - 修改为与添加分类弹窗一致的风格 -->
+    <NModal
+      v-model:show="deleteDialogVisible"
+      title="删除笔记"
+      :closable="false"
+      :mask-closable="false"
+      preset="dialog"
+    >
+      <div style="padding: 20px 0;">
+        确定要删除笔记 "{{ selectedNote?.title }}" 吗？此操作不可恢复。
+      </div>
+      <template #action>
+        <NButton @click="cancelDelete">取消</NButton>
+        <NButton type="primary" danger @click="handleDeleteNote">确定删除</NButton>
+      </template>
+    </NModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { NButton } from "naive-ui";
-import { Grid3X3, List, Plus } from "lucide-vue-next";
+import { NButton, NModal } from "naive-ui";
+import { Grid3X3, List, Plus, Delete } from "lucide-vue-next";
 import type { Note } from "../../types/note/tag";
+import { useNotesStore } from "../../store/notes";
+
+// 获取笔记store
+const notesStore = useNotesStore();
 
 // 定义组件的 props
 const modelValue = defineModel<Note[]>({
@@ -85,6 +132,10 @@ const emit = defineEmits<{
   "new-note": [];
 }>();
 
+// 删除相关变量
+const deleteDialogVisible = ref(false);
+const selectedNote = ref<Note | null>(null);
+
 // 处理笔记点击事件
 const handleNoteClick = (note: Note) => {
   emit("note-click", note);
@@ -93,6 +144,27 @@ const handleNoteClick = (note: Note) => {
 // 处理新建笔记事件
 const handleNewNote = () => {
   emit("new-note");
+};
+
+// 显示删除确认对话框
+const showDeleteDialog = (note: Note) => {
+  selectedNote.value = note;
+  deleteDialogVisible.value = true;
+};
+
+// 取消删除
+const cancelDelete = () => {
+  deleteDialogVisible.value = false;
+  selectedNote.value = null;
+};
+
+// 处理删除笔记
+const handleDeleteNote = () => {
+  if (selectedNote.value) {
+    notesStore.deleteNote(selectedNote.value.id);
+    deleteDialogVisible.value = false;
+    selectedNote.value = null;
+  }
 };
 
 // 格式化时间显示
@@ -111,15 +183,19 @@ const stripMarkdown = (content: string) => {
     .replace(/\n+/g, " ")
     .trim();
 };
+
+// 通过分类ID获取分类名称
+const getCategoryName = (categoryId: string): string => {
+  if (!categoryId || !notesStore.categories.length) return '';
+  const category = notesStore.categories.find(cat => cat.id === categoryId);
+  return category ? category.name : '';
+};
 </script>
 
 <style scoped>
+/* 原有样式保持不变 */
 .notes-container {
-  /* padding: 20px; */
   height: 100%;
-  /* display: flex; */
-  /* flex-direction: column; */
-  /* 移除重复的背景色设置，让组件继承父组件的背景色 */
   overflow-y: auto;
 }
 
@@ -207,14 +283,11 @@ const stripMarkdown = (content: string) => {
 }
 
 .note-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   margin-bottom: 16px;
 }
 
 .note-title {
-  margin: 0;
+  margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
   color: #333;
@@ -225,11 +298,36 @@ const stripMarkdown = (content: string) => {
   overflow: hidden;
 }
 
+.note-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .note-time {
-  margin: 0;
   font-size: 12px;
   color: #999;
   white-space: nowrap;
+}
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #673ab7;
+  background: linear-gradient(135deg, #ede7f6 0%, #e1bee7 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(103, 58, 183, 0.2);
+  box-shadow: 0 1px 3px rgba(103, 58, 183, 0.1);
+  transition: all 0.3s ease;
+}
+
+.category-badge:hover {
+  background: linear-gradient(135deg, #e1bee7 0%, #d1c4e9 100%);
+  box-shadow: 0 2px 6px rgba(103, 58, 183, 0.2);
+  transform: translateY(-1px);
 }
 
 .note-content {
@@ -241,6 +339,7 @@ const stripMarkdown = (content: string) => {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .note-tags {
@@ -248,7 +347,7 @@ const stripMarkdown = (content: string) => {
   flex-wrap: wrap;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid #f0f0f0; /* 为标签区域添加顶部边框，增强底部视觉效果 */
+  border-top: 1px solid #f0f0f0;
   margin-top: 12px;
 }
 
@@ -266,12 +365,40 @@ const stripMarkdown = (content: string) => {
   color: white;
 }
 
+/* 笔记操作按钮样式 */
+.note-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.note-card:hover .note-actions {
+  opacity: 1;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #999;
+  transition: all 0.3s ease;
+}
+
+.delete-button:hover {
+  background-color: #fff2f0;
+  color: #ff4d4f;
+}
+
 /* 列表模式样式 */
 .notes-list {
   flex: 1;
   overflow-y: auto;
   padding-right: 8px;
-  padding-bottom: 20px; /* 添加底部内边距，避免最后一项被遮挡 */
+  padding-bottom: 20px;
 }
 
 /* 新建笔记列表项 */
@@ -317,10 +444,10 @@ const stripMarkdown = (content: string) => {
   transition: all 0.3s ease;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
-  border-left: 4px solid #1890ff; /* 设置左侧蓝色边框，增强顶部视觉效果 */
-  border-bottom: 1px solid #f0f0f0; /* 添加底部边框，平衡视觉效果 */
+  border-left: 4px solid #1890ff;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .note-list-item:hover {
@@ -331,14 +458,23 @@ const stripMarkdown = (content: string) => {
 .note-list-main {
   flex: 1;
   min-width: 0;
+  cursor: pointer;
+}
+
+.note-list-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .note-list-title {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: #333;
   line-height: 1.4;
+  flex: 1;
 }
 
 .note-list-content {
@@ -373,6 +509,17 @@ const stripMarkdown = (content: string) => {
 
 .note-list-tags .tag {
   white-space: nowrap;
+}
+
+/* 列表模式的操作按钮 */
+.note-list-actions {
+  margin-left: 16px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.note-list-item:hover .note-list-actions {
+  opacity: 1;
 }
 
 /* 滚动条样式优化 */
@@ -420,6 +567,11 @@ const stripMarkdown = (content: string) => {
   .note-list-tags {
     text-align: left;
     align-items: flex-start;
+  }
+
+  .note-list-actions {
+    margin-left: 0;
+    align-self: flex-end;
   }
 }
 </style>

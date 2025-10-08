@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, markRaw } from "vue";
 import { useAppStore } from "./store/app";
 import StatusBar from "./components/StatusBar.vue";
-// 导入 Element Plus 组件
 
 // 导入图标
 import {
@@ -13,11 +12,13 @@ import {
   Flag,
   Plus,
 } from "lucide-vue-next";
+
 // 导入页面组件
 import NotesPage from "./views/NotesPage.vue";
 import WorkContentPage from "./views/WorkContentPage.vue";
 import CodeRepositoryPage from "./views/CodeRepositoryPage.vue";
 import WeeklyReportPage from "./views/WeeklyReportPage.vue";
+
 import { NTab, NTabs } from "naive-ui";
 
 const appStore = useAppStore();
@@ -29,26 +30,26 @@ const menuItems = [
   {
     path: "/notes",
     name: "笔记",
-    icon: NotebookPen,
-    component: NotesPage,
+    icon: markRaw(NotebookPen),
+    component: markRaw(NotesPage),
   },
   {
     path: "/work-content",
     name: "工作内容",
-    icon: Drill,
-    component: WorkContentPage,
+    icon: markRaw(Drill),
+    component: markRaw(WorkContentPage),
   },
   {
     path: "/code-repository",
     name: "代码仓库",
-    icon: GitGraph,
-    component: CodeRepositoryPage,
+    icon: markRaw(GitGraph),
+    component: markRaw(CodeRepositoryPage),
   },
   {
     path: "/weekly-report",
     name: "周报",
-    icon: Flag,
-    component: WeeklyReportPage,
+    icon: markRaw(Flag),
+    component: markRaw(WeeklyReportPage),
   },
 ];
 
@@ -57,7 +58,7 @@ const activeTabs = ref([
   {
     path: "/notes",
     name: "笔记",
-    component: NotesPage,
+    component: markRaw(NotesPage),
     isClosable: false,
   },
 ]);
@@ -99,7 +100,7 @@ const handleCreateTab = () => {
   const newTab = {
     path: `/notes-${uniqueId}`,
     name: `笔记-${uniqueId.substring(uniqueId.length - 4)}`,
-    component: NotesPage,
+    component: markRaw(NotesPage),
     isClosable: true,
   };
 
@@ -156,11 +157,12 @@ const handleCreateTab = () => {
           </NTabs>
         </template>
       </StatusBar>
-      <!-- 使用 Element Plus 的 Tab 组件替代路由视图 -->
+      <!-- 使用动态组件渲染当前激活的标签页内容 -->
       <div class="content-wrapper">
-        <template v-for="tab in activeTabs" :key="tab.path">
-          <component :is="tab.component" v-show="tab.path === activeTab" />
-        </template>
+        <component 
+          :is="activeTabs.find(tab => tab.path === activeTab)?.component"
+          :key="activeTab"
+        />
       </div>
     </main>
   </div>
