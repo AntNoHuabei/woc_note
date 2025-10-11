@@ -57,9 +57,15 @@ const modelValue = defineModel<Category[]>({
 const selectedCategoryId = ref<string>("-1");
 const notesStore = useNotesStore();
 
+// 定义 emit
+const emit = defineEmits<{
+  "category-change": [categoryId: string];
+}>();
+
 // 选择分类（单选逻辑）
 const selectCategory = (categoryId: string) => {
   selectedCategoryId.value = categoryId;
+  emit("category-change", categoryId);
 };
 
 // 确认删除分类
@@ -75,53 +81,89 @@ const handleConfirmDelete = (categoryId: string, categoryName: string) => {
 <style lang="less" scoped>
 .category-container {
   width: 100%;
+  padding: 4px 6px;
 }
 
 .category-item {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
-  margin-bottom: 2px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  border-left: 3px solid transparent;
   justify-content: space-between;
+  background: white;
+  border: 1px solid transparent;
+}
+
+.category-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #2563eb;
+  opacity: 0;
+  border-radius: 8px 0 0 8px;
+  transition: opacity 0.25s ease;
 }
 
 .category-item:hover {
-  background-color: #f0f2f5;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.category-item:hover::before {
+  opacity: 0.3;
 }
 
 .category-item.selected {
-  background-color: #e6f1ff;
-  border-left-color: #2979ff;
-  font-weight: 500;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.category-item.selected::before {
+  opacity: 1;
 }
 
 .category-icon {
   margin-right: 8px;
   flex-shrink: 0;
+  transition: all 0.25s ease;
+  color: #6b7280;
+}
+
+.category-item:hover .category-icon {
+  color: #2563eb;
 }
 
 .category-item.selected .category-icon {
-  color: #2979ff;
+  color: #2563eb;
 }
 
 .category-text {
-  font-size: 14px;
-  color: #333;
+  font-size: 13px;
+  color: #111827;
   flex: 1;
+  font-weight: 500;
+  transition: color 0.25s ease;
+}
+
+.category-item:hover .category-text {
+  color: #2563eb;
 }
 
 .category-item.selected .category-text {
-  color: #2979ff;
+  color: #1e40af;
+  font-weight: 600;
 }
 
 .delete-btn {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -129,9 +171,9 @@ const handleConfirmDelete = (categoryId: string, categoryName: string) => {
   background: none;
   border-radius: 4px;
   cursor: pointer;
-  color: #999;
+  color: #9ca3af;
   opacity: 0;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .category-item:hover .delete-btn {
@@ -139,7 +181,7 @@ const handleConfirmDelete = (categoryId: string, categoryName: string) => {
 }
 
 .delete-btn:hover {
-  background-color: #f5f5f5;
-  color: #ff4d4f;
+  background: #fef2f2;
+  color: #dc2626;
 }
 </style>

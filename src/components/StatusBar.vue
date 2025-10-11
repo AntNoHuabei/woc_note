@@ -39,16 +39,18 @@ onMounted(() => {
 <style scoped>
 .status-bar {
   height: 50px;
-  background-color: #f0f0f0;
   color: #333;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background-color: #ffffff;
   padding: 0 0;
   /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
   z-index: 1000;
   user-select: none;
   app-region: drag;
+  border-bottom: 1px solid #e5e7eb;
+  
 }
 
 /* 黑暗主题适配 */

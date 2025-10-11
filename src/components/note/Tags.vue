@@ -2,18 +2,13 @@
   <div class="tags-container">
     <div style="height: 10px;width: 100%;">&nbsp;</div>
     <div
-      v-for="tag in modelValue"
+      v-for="(tag, index) in modelValue"
       :key="tag"
-      :class="['tag', `tag-color-${getTagColorIndex(tag)}`, { 'selected': selectedTags.includes(tag) }]"
+      :class="['tag', { 'selected': selectedTags.includes(tag) }]"
+      :data-color-index="index % 8"
     >
       <div @click.stop="toggleSelectedTag(tag)" class="tag-content">
-        <Tag :size="12" class="tag-icon" />
         <span class="tag-text">{{ tag }}</span>
-        <span v-if="selectedTags.includes(tag)" class="selected-indicator">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-            <path d="M1.75 5L4 7.25L8.25 2.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
       </div>
       
       <NPopconfirm 
@@ -59,6 +54,11 @@ const modelValue = defineModel<string[]>({
 const selectedTags = ref<string[]>([]);
 const notesStore = useNotesStore();
 
+// 定义 emit
+const emit = defineEmits<{
+  "tags-change": [tags: string[]];
+}>();
+
 // 切换标签选择状态
 const toggleSelectedTag = (tag: string) => {
   if (selectedTags.value.includes(tag)) {
@@ -66,6 +66,7 @@ const toggleSelectedTag = (tag: string) => {
   } else {
     selectedTags.value.push(tag);
   }
+  emit("tags-change", selectedTags.value);
 };
 
 // 删除标签
@@ -77,248 +78,156 @@ const handleDeleteTag = (tag: string) => {
   }
 };
 
-// 获取标签颜色索引
-const getTagColorIndex = (tag: string): number => {
-  let hash = 0;
-  for (let i = 0; i < tag.length; i++) {
-    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
-    hash = hash & hash;
-  }
-  return Math.abs(hash) % 8;
-};
 </script>
 
 <style scoped>
-/* 现代化的标签容器 */
 .tags-container {
   width: 100%;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
+  padding: 8px;
 }
 
-/* 基础标签样式 - 更精致的设计 */
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 18px;
-  font-size: 13px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  gap: 4px;
-  border: 1.5px solid transparent;
-  background-origin: border-box;
-  position: relative;
-  overflow: hidden;
   justify-content: space-between;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px 3px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.02em;
+  position: relative;
+  padding-left: 10px;
+  text-transform: uppercase;
+  gap: 6px;
 }
 
-/* 标签内容区域 */
 .tag-content {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
 }
 
-/* 添加微妙的背景渐变和质感 */
 .tag::before {
-  content: '';
+  content: "";
   position: absolute;
-  top: 0;
   left: 0;
-  right: 0;
+  top: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
-  pointer-events: none;
-}
-
-/* 标签内部元素样式优化 */
-.tag-icon {
-  flex-shrink: 0;
-  opacity: 0.85;
-  transition: opacity 0.2s ease;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+  opacity: 0.8;
 }
 
 .tag-text {
   flex-shrink: 0;
-  font-weight: 400;
-  letter-spacing: 0.2px;
 }
 
-.selected-indicator {
-  flex-shrink: 0;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 删除按钮样式 */
 .delete-btn {
   width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  background: none;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.5);
   border-radius: 4px;
   cursor: pointer;
-  color: #999;
   opacity: 0;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(0.9);
 }
 
 .tag:hover .delete-btn {
   opacity: 1;
-}
-
-.delete-btn:hover {
-  background-color: rgba(255, 77, 79, 0.1);
-  color: #ff4d4f;
-}
-
-/* 悬停效果 - 更精致的反馈 */
-.tag:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.tag:hover .tag-icon {
-  opacity: 1;
-}
-
-/* 选中状态 - 更明显的视觉变化 */
-.tag.selected {
-  transform: translateY(-1px) scale(1.03);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-  font-weight: 500;
-}
-
-.tag.selected .selected-indicator {
-  opacity: 1;
   transform: scale(1);
 }
 
-/* 8种精心挑选的柔和色彩方案 */
-.tag-color-0 {
-  background-color: #f0f7ff;
-  color: #2979ff;
-  border-color: #bbdefb;
+.delete-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #dc2626;
+  transform: scale(1.1);
 }
 
-.tag-color-0.selected {
-  background-color: #2979ff;
-  color: white;
-  border-color: #1e88e5;
+.tag:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  filter: brightness(0.95);
 }
 
-.tag-color-1 {
-  background-color: #fce4ec;
-  color: #e91e63;
-  border-color: #f8bbd0;
+.tag.selected {
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  filter: brightness(0.9);
 }
 
-.tag-color-1.selected {
-  background-color: #e91e63;
-  color: white;
-  border-color: #c2185b;
+/* 8种活泼配色 - 书签样式 */
+.tag[data-color-index="0"] {
+  color: #dc2626;
+  background: #fee2e2;
+}
+.tag[data-color-index="0"]::before {
+  background: #dc2626;
 }
 
-.tag-color-2 {
-  background-color: #e8f5e8;
-  color: #4caf50;
-  border-color: #c8e6c9;
+.tag[data-color-index="1"] {
+  color: #ea580c;
+  background: #ffedd5;
+}
+.tag[data-color-index="1"]::before {
+  background: #ea580c;
 }
 
-.tag-color-2.selected {
-  background-color: #4caf50;
-  color: white;
-  border-color: #388e3c;
+.tag[data-color-index="2"] {
+  color: #ca8a04;
+  background: #fef3c7;
+}
+.tag[data-color-index="2"]::before {
+  background: #ca8a04;
 }
 
-.tag-color-3 {
-  background-color: #fff3e0;
-  color: #ff9800;
-  border-color: #ffe0b2;
+.tag[data-color-index="3"] {
+  color: #16a34a;
+  background: #dcfce7;
+}
+.tag[data-color-index="3"]::before {
+  background: #16a34a;
 }
 
-.tag-color-3.selected {
-  background-color: #ff9800;
-  color: white;
-  border-color: #f57c00;
+.tag[data-color-index="4"] {
+  color: #0891b2;
+  background: #cffafe;
+}
+.tag[data-color-index="4"]::before {
+  background: #0891b2;
 }
 
-.tag-color-4 {
-  background-color: #f3e5f5;
-  color: #9c27b0;
-  border-color: #e1bee7;
+.tag[data-color-index="5"] {
+  color: #2563eb;
+  background: #dbeafe;
+}
+.tag[data-color-index="5"]::before {
+  background: #2563eb;
 }
 
-.tag-color-4.selected {
-  background-color: #9c27b0;
-  color: white;
-  border-color: #7b1fa2;
+.tag[data-color-index="6"] {
+  color: #7c3aed;
+  background: #ede9fe;
+}
+.tag[data-color-index="6"]::before {
+  background: #7c3aed;
 }
 
-.tag-color-5 {
-  background-color: #e0f2f1;
-  color: #009688;
-  border-color: #b2dfdb;
+.tag[data-color-index="7"] {
+  color: #db2777;
+  background: #fce7f3;
 }
-
-.tag-color-5.selected {
-  background-color: #009688;
-  color: white;
-  border-color: #00796b;
-}
-
-.tag-color-6 {
-  background-color: #f5f5f5;
-  color: #616161;
-  border-color: #e0e0e0;
-}
-
-.tag-color-6.selected {
-  background-color: #616161;
-  color: white;
-  border-color: #424242;
-}
-
-.tag-color-7 {
-  background-color: #ede7f6;
-  color: #673ab7;
-  border-color: #d1c4e9;
-}
-
-.tag-color-7.selected {
-  background-color: #673ab7;
-  color: white;
-  border-color: #5e35b1;
-}
-
-/* 添加脉冲动画效果提升视觉吸引力 */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(41, 121, 255, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(41, 121, 255, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(41, 121, 255, 0);
-  }
-}
-
-/* 为第一个选中的标签添加脉冲效果 */
-.tag.selected:nth-child(1) {
-  animation: pulse 1.5s ease-out;
+.tag[data-color-index="7"]::before {
+  background: #db2777;
 }
 </style>

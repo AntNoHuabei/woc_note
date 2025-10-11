@@ -14,24 +14,41 @@
         v-for="note in modelValue"
         :key="note.id"
         class="note-card"
+        @click.stop="handleNoteClick(note)"
       >
         <div class="note-header">
           <h3 class="note-title">{{ note.title }}</h3>
-          <div class="note-meta">
-            <span v-if="getCategoryName(note.categoryId)" class="category-badge">
+          <div 
+            class="note-meta"
+            :class="{ 'no-category': !getCategoryName(note.categoryId) }"
+          >
+            <span
+              v-if="getCategoryName(note.categoryId)"
+              class="category-badge"
+            >
               {{ getCategoryName(note.categoryId) }}
             </span>
             <span class="note-time">{{ formatTime(note.updateTime) }}</span>
           </div>
         </div>
-        <div class="note-content" @click.stop="handleNoteClick(note)">
+        <div 
+          class="note-content"
+          :class="{ 'no-tags': !note.tags || note.tags.length === 0 }"
+        >
           {{ stripMarkdown(note.content).substring(0, 100) }}...
         </div>
-        <div class="note-tags">
-          <span v-for="tag in note.tags" :key="tag" class="tag">{{ tag }}</span>
+        <div v-if="note.tags && note.tags.length > 0" class="note-tags">
+          <span 
+            v-for="(tag, index) in note.tags" 
+            :key="tag" 
+            class="tag"
+            :data-color-index="index % 8"
+          >
+            {{ tag }}
+          </span>
         </div>
         <div class="note-actions">
-          <button 
+          <button
             class="delete-button"
             @click.stop="showDeleteDialog(note)"
             title="删除笔记"
@@ -50,32 +67,42 @@
         <span class="new-note-list-text">创建新笔记</span>
       </div>
 
-      <div
-        v-for="note in modelValue"
-        :key="note.id"
-        class="note-list-item"
-      >
+      <div v-for="note in modelValue" :key="note.id" class="note-list-item">
         <div class="note-list-main" @click.stop="handleNoteClick(note)">
-          <div class="note-list-header">
+          <div 
+            class="note-list-header"
+            :class="{ 'no-category': !getCategoryName(note.categoryId) }"
+          >
             <h3 class="note-list-title">{{ note.title }}</h3>
-            <span v-if="getCategoryName(note.categoryId)" class="category-badge">
+            <span
+              v-if="getCategoryName(note.categoryId)"
+              class="category-badge"
+            >
               {{ getCategoryName(note.categoryId) }}
             </span>
           </div>
-          <p class="note-list-content">
+          <p 
+            class="note-list-content"
+            :class="{ 'no-tags': !note.tags || note.tags.length === 0 }"
+          >
             {{ stripMarkdown(note.content).substring(0, 150) }}...
           </p>
         </div>
         <div class="note-list-meta">
           <p class="note-list-time">{{ formatTime(note.updateTime) }}</p>
-          <div class="note-list-tags">
-            <span v-for="tag in note.tags" :key="tag" class="tag">{{
-              tag
-            }}</span>
+          <div v-if="note.tags && note.tags.length > 0" class="note-list-tags">
+            <span 
+              v-for="(tag, index) in note.tags" 
+              :key="tag" 
+              class="tag"
+              :data-color-index="index % 8"
+            >
+              {{ tag }}
+            </span>
           </div>
         </div>
         <div class="note-list-actions">
-          <button 
+          <button
             class="delete-button"
             @click.stop="showDeleteDialog(note)"
             title="删除笔记"
@@ -94,12 +121,14 @@
       :mask-closable="false"
       preset="dialog"
     >
-      <div style="padding: 20px 0;">
+      <div style="padding: 20px 0">
         确定要删除笔记 "{{ selectedNote?.title }}" 吗？此操作不可恢复。
       </div>
       <template #action>
         <NButton @click="cancelDelete">取消</NButton>
-        <NButton type="primary" danger @click="handleDeleteNote">确定删除</NButton>
+        <NButton type="primary" danger @click="handleDeleteNote"
+          >确定删除</NButton
+        >
       </template>
     </NModal>
   </div>
@@ -186,79 +215,108 @@ const stripMarkdown = (content: string) => {
 
 // 通过分类ID获取分类名称
 const getCategoryName = (categoryId: string): string => {
-  if (!categoryId || !notesStore.categories.length) return '';
-  const category = notesStore.categories.find(cat => cat.id === categoryId);
-  return category ? category.name : '';
+  if (!categoryId || !notesStore.categories.length) return "";
+  const category = notesStore.categories.find((cat) => cat.id === categoryId);
+  return category ? category.name : "";
 };
 </script>
 
 <style scoped>
-/* 原有样式保持不变 */
 .notes-container {
   height: 100%;
   overflow-y: auto;
+  background: #ffffff;
 }
 
-/* 卡片模式样式 */
 .notes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  gap: 18px;
   flex: 1;
   overflow-y: auto;
-  padding-right: 8px;
-  padding-bottom: 20px; /* 添加底部内边距，避免最后一排卡片被遮挡 */
+  padding: 24px;
+  padding-right: 16px;
+  padding-bottom: 32px;
 }
 
-/* 新建笔记卡片 */
 .new-note-card {
-  background: white;
+  background: linear-gradient(to bottom, #ffffff 0%, #fefefe 100%);
   border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 200px;
-  border: 2px dashed #d9d9d9;
+  min-height: 170px;
+  border: 2px dashed #d1d5db;
+  position: relative;
+  overflow: hidden;
+}
+
+.new-note-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(37, 99, 235, 0.02) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .new-note-card:hover {
-  border-color: #1890ff;
-  background-color: #f0f7ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.15);
+  border-color: #2563eb;
+  background: #ffffff;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.new-note-card:hover::after {
+  opacity: 1;
 }
 
 .new-note-card-content {
   text-align: center;
-  color: #999;
+  color: #6b7280;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.new-note-card:hover .new-note-card-content {
+  color: #2563eb;
 }
 
 .new-note-icon {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 10px;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.65;
+}
+
+.new-note-card:hover .new-note-icon {
+  transform: scale(1.1);
+  opacity: 1;
 }
 
 .new-note-text {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-/* 笔记卡片样式优化 */
 .note-card {
-  background: white;
+  background: linear-gradient(to bottom, #ffffff 0%, #fefefe 100%);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  border: 1px solid #e5e7eb;
   overflow: hidden;
-  border-top: 3px solid #1890ff; /* 增强顶部视觉效果 */
 }
 
 .note-card::before {
@@ -266,193 +324,363 @@ const getCategoryName = (categoryId: string): string => {
   position: absolute;
   top: 0;
   left: 0;
-  width: 4px;
-  height: 100%;
-  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
-}
-
-.note-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  transform: translateY(-4px);
 }
 
 .note-card:hover::before {
   opacity: 1;
 }
 
+.note-card:hover {
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.08), 0 8px 24px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px);
+  border-color: #d1d5db;
+}
+
 .note-header {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  position: relative;
 }
 
 .note-title {
-  margin: 0 0 8px 0;
-  font-size: 18px;
+  margin: 0 0 14px 0;
+  font-size: 17px;
   font-weight: 600;
-  color: #333;
+  color: #111827;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color 0.3s ease;
+  letter-spacing: -0.02em;
+}
+
+.note-card:hover .note-title {
+  color: #2563eb;
 }
 
 .note-meta {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
+  min-height: 22px;
+  flex-wrap: wrap;
+}
+
+.note-meta.no-category {
+  min-height: 18px;
 }
 
 .note-time {
   font-size: 12px;
-  color: #999;
+  color: #6b7280;
   white-space: nowrap;
+  font-weight: 500;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: #f9fafb;
+  border-radius: 4px;
 }
 
 .category-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #673ab7;
-  background: linear-gradient(135deg, #ede7f6 0%, #e1bee7 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(103, 58, 183, 0.2);
-  box-shadow: 0 1px 3px rgba(103, 58, 183, 0.1);
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e40af;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-radius: 6px;
   transition: all 0.3s ease;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 2px rgba(30, 64, 175, 0.08);
 }
 
 .category-badge:hover {
-  background: linear-gradient(135deg, #e1bee7 0%, #d1c4e9 100%);
-  box-shadow: 0 2px 6px rgba(103, 58, 183, 0.2);
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
   transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.12);
 }
 
 .note-content {
   font-size: 14px;
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 16px;
+  color: #4b5563;
+  line-height: 1.65;
+  margin-bottom: 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.note-content.no-tags {
+  padding-bottom: 4px;
+}
+
+.note-card:hover .note-content {
+  color: #1f2937;
 }
 
 .note-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
-  margin-top: 12px;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 16px;
 }
 
 .tag {
-  font-size: 12px;
-  color: #1890ff;
-  background-color: #e6f4ff;
-  padding: 4px 12px;
-  border-radius: 16px;
-  transition: all 0.3s ease;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px 3px 6px;
+  border-radius: 3px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.02em;
+  position: relative;
+  padding-left: 10px;
+  text-transform: uppercase;
+}
+
+.tag::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+  opacity: 0.8;
+}
+
+.tag[data-color-index="0"] {
+  color: #dc2626;
+  background: #fee2e2;
+}
+.tag[data-color-index="0"]::before {
+  background: #dc2626;
+}
+
+.tag[data-color-index="1"] {
+  color: #ea580c;
+  background: #ffedd5;
+}
+.tag[data-color-index="1"]::before {
+  background: #ea580c;
+}
+
+.tag[data-color-index="2"] {
+  color: #ca8a04;
+  background: #fef3c7;
+}
+.tag[data-color-index="2"]::before {
+  background: #ca8a04;
+}
+
+.tag[data-color-index="3"] {
+  color: #16a34a;
+  background: #dcfce7;
+}
+.tag[data-color-index="3"]::before {
+  background: #16a34a;
+}
+
+.tag[data-color-index="4"] {
+  color: #0891b2;
+  background: #cffafe;
+}
+.tag[data-color-index="4"]::before {
+  background: #0891b2;
+}
+
+.tag[data-color-index="5"] {
+  color: #2563eb;
+  background: #dbeafe;
+}
+.tag[data-color-index="5"]::before {
+  background: #2563eb;
+}
+
+.tag[data-color-index="6"] {
+  color: #7c3aed;
+  background: #ede9fe;
+}
+.tag[data-color-index="6"]::before {
+  background: #7c3aed;
+}
+
+.tag[data-color-index="7"] {
+  color: #db2777;
+  background: #fce7f3;
+}
+.tag[data-color-index="7"]::before {
+  background: #db2777;
 }
 
 .tag:hover {
-  background-color: #1890ff;
-  color: white;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  filter: brightness(0.95);
 }
 
-/* 笔记操作按钮样式 */
 .note-actions {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 18px;
+  right: 18px;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+  transform: scale(0.9);
 }
 
 .note-card:hover .note-actions {
   opacity: 1;
+  transform: scale(1);
 }
 
 .delete-button {
-  background: none;
-  border: none;
-  padding: 6px;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e5e7eb;
+  padding: 7px;
+  border-radius: 8px;
   cursor: pointer;
-  color: #999;
-  transition: all 0.3s ease;
+  color: #6b7280;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .delete-button:hover {
-  background-color: #fff2f0;
-  color: #ff4d4f;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: #dc2626;
+  border-color: #fca5a5;
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
 }
 
-/* 列表模式样式 */
 .notes-list {
   flex: 1;
   overflow-y: auto;
-  padding-right: 8px;
-  padding-bottom: 20px;
+  padding: 24px;
+  padding-right: 16px;
+  padding-bottom: 32px;
+  background: #ffffff;
 }
 
-/* 新建笔记列表项 */
 .new-note-list-item {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(to right, #ffffff 0%, #fefefe 100%);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
-  gap: 12px;
-  border: 2px dashed #d9d9d9;
+  gap: 14px;
+  border: 2px dashed #d1d5db;
+  position: relative;
+  overflow: hidden;
+}
+
+.new-note-list-item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(37, 99, 235, 0.02) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .new-note-list-item:hover {
-  border-color: #1890ff;
-  background-color: #f0f7ff;
-  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.15);
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateX(3px);
+}
+
+.new-note-list-item:hover::after {
+  opacity: 1;
 }
 
 .new-note-list-icon {
-  width: 24px;
-  height: 24px;
-  color: #999;
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+  transition: all 0.3s ease;
+  opacity: 0.65;
+  position: relative;
+  z-index: 1;
+}
+
+.new-note-list-item:hover .new-note-list-icon {
+  color: #2563eb;
+  transform: scale(1.1);
+  opacity: 1;
 }
 
 .new-note-list-text {
-  font-size: 16px;
-  color: #999;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  transition: color 0.3s ease;
+  letter-spacing: 0.02em;
+  position: relative;
+  z-index: 1;
 }
 
-/* 笔记列表项样式优化 */
+.new-note-list-item:hover .new-note-list-text {
+  color: #2563eb;
+}
+
 .note-list-item {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(to right, #ffffff 0%, #fefefe 100%);
+  border-radius: 12px;
+  padding: 22px 26px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   position: relative;
-  border-left: 4px solid #1890ff;
-  border-bottom: 1px solid #f0f0f0;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.note-list-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.note-list-item:hover::before {
+  opacity: 1;
 }
 
 .note-list-item:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  background-color: #fafafa;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.08), 0 8px 24px rgba(0, 0, 0, 0.06);
+  border-color: #d1d5db;
+  transform: translateX(3px);
 }
 
 .note-list-main {
@@ -464,7 +692,14 @@ const getCategoryName = (categoryId: string): string => {
 .note-list-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  margin-bottom: 10px;
+  min-height: 24px;
+  flex-wrap: wrap;
+}
+
+.note-list-header.no-category {
+  min-height: 20px;
   margin-bottom: 8px;
 }
 
@@ -472,77 +707,107 @@ const getCategoryName = (categoryId: string): string => {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #333;
-  line-height: 1.4;
+  color: #111827;
+  line-height: 1.5;
   flex: 1;
+  transition: color 0.3s ease;
+  letter-spacing: -0.02em;
+}
+
+.note-list-item:hover .note-list-title {
+  color: #2563eb;
 }
 
 .note-list-content {
   margin: 0;
   font-size: 14px;
-  color: #666;
-  line-height: 1.5;
+  color: #4b5563;
+  line-height: 1.65;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color 0.3s ease;
+}
+
+.note-list-content.no-tags {
+  padding-bottom: 4px;
+}
+
+.note-list-item:hover .note-list-content {
+  color: #1f2937;
 }
 
 .note-list-meta {
-  margin-left: 24px;
-  min-width: 150px;
+  margin-left: 28px;
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .note-list-time {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 12px;
-  color: #999;
+  color: #6b7280;
   text-align: right;
+  font-weight: 500;
+  line-height: 1.5;
+  padding: 2px 8px;
+  background: #f9fafb;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .note-list-tags {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 7px;
+  margin-top: 10px;
 }
 
 .note-list-tags .tag {
   white-space: nowrap;
 }
 
-/* 列表模式的操作按钮 */
 .note-list-actions {
-  margin-left: 16px;
+  margin-left: 20px;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+  transform: scale(0.9);
 }
 
 .note-list-item:hover .note-list-actions {
   opacity: 1;
+  transform: scale(1);
 }
 
-/* 滚动条样式优化 */
 .notes-grid::-webkit-scrollbar,
 .notes-list::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 .notes-grid::-webkit-scrollbar-track,
 .notes-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background: transparent;
+  margin: 8px 0;
 }
 
 .notes-grid::-webkit-scrollbar-thumb,
 .notes-list::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
+  background: #e4e4e7;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: all 0.25s ease;
 }
 
 .notes-grid::-webkit-scrollbar-thumb:hover,
 .notes-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #a1a1aa;
+  background-clip: padding-box;
 }
 
 /* 响应式设计 */

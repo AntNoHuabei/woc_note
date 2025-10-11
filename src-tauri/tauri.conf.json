@@ -16,13 +16,16 @@
         "width": 1024,
         "height": 768,
         "decorations": false,
-        "titleBarStyle": "Overlay"
+        "titleBarStyle": "Overlay",
+        "additionalBrowserArgs": "--disable-features=ElasticOverscroll"
       }
     ],
     "security": {
       "csp": null
     }
   },
+
+  
   "bundle": {
     "active": true,
     "targets": "all",

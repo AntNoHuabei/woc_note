@@ -24,7 +24,10 @@
             </NButton>
           </div>
         </div>
-        <Category v-model="categories" />
+        <Category
+          v-model="categories"
+          @category-change="handleCategoryChange"
+        />
       </div>
 
       <div style="padding: 16px">
@@ -38,31 +41,17 @@
             </NButton>
           </div>
         </div>
-        <Tags v-model="tags" />
+        <Tags v-model="tags" @tags-change="handleTagsChange" />
       </div>
     </NLayoutSider>
 
     <!-- 右侧内容区域 -->
     <div class="right-content">
       <!-- 工具栏 -->
-      <div class="notes-toolbar">
+      <div class="notes-toolbar" v-if="!isEditing">
         <div class="toolbar-left">
-          <!-- 返回按钮，仅在编辑模式下显示 -->
-          <NButton
-            v-if="isEditing"
-            @click="exitEditMode"
-            size="small"
-            style="margin-right: 8px"
-          >
-            <template #icon>
-              <ChevronLeft class="icon" />
-            </template>
-            返回列表
-          </NButton>
-
           <!-- 搜索框，仅在列表模式下显示 -->
           <NInput
-            v-if="!isEditing"
             v-model:value="searchKeyword"
             placeholder="搜索笔记"
             clearable
@@ -75,28 +64,26 @@
           </NInput>
         </div>
         <div class="toolbar-right">
-          <!-- 模式切换按钮，仅在列表模式下显示 -->
-          <template v-if="!isEditing">
-            <NButton
-              :class="{ active: viewMode === 'grid' }"
-              @click="switchToGridMode"
-              size="small"
-              style="margin-right: 8px"
-            >
-              <template #icon>
-                <Grid3X3 class="icon" />
-              </template>
-            </NButton>
-            <NButton
-              :class="{ active: viewMode === 'list' }"
-              @click="switchToListMode"
-              size="small"
-            >
-              <template #icon>
-                <List class="icon" />
-              </template>
-            </NButton>
-          </template>
+          <!-- 模式切换按钮 -->
+          <NButton
+            :class="{ active: viewMode === 'grid' }"
+            @click="switchToGridMode"
+            size="small"
+            style="margin-right: 8px"
+          >
+            <template #icon>
+              <Grid3X3 class="icon" />
+            </template>
+          </NButton>
+          <NButton
+            :class="{ active: viewMode === 'list' }"
+            @click="switchToListMode"
+            size="small"
+          >
+            <template #icon>
+              <List class="icon" />
+            </template>
+          </NButton>
         </div>
       </div>
 
@@ -105,7 +92,7 @@
         <!-- 笔记列表模式 -->
         <div v-if="!isEditing" class="notes-list-container">
           <Notes
-            v-model="notes"
+            v-model="filteredNotes"
             @note-click="handleNoteClick"
             @new-note="handleNewNote"
             :view-mode="viewMode"
@@ -180,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import {
   NLayout,
   NLayoutSider,
@@ -195,7 +182,6 @@ import {
   Grid3X3,
   List,
   CirclePlus,
-  ChevronLeft,
 } from "lucide-vue-next";
 import { useNotesStore } from "../store/notes";
 import Tags from "../components/note/Tags.vue";
@@ -210,6 +196,12 @@ const notesStore = useNotesStore();
 const { tags, categories, notes } = storeToRefs(notesStore);
 // 搜索关键词
 const searchKeyword = ref("");
+
+// 选中的分类ID
+const selectedCategoryId = ref<string>("-1");
+
+// 选中的标签列表
+const selectedTagsList = ref<string[]>([]);
 
 // 视图模式状态：grid 为卡片模式，list 为列表模式
 const viewMode = ref<"grid" | "list">("grid");
@@ -227,6 +219,40 @@ const newCategoryName = ref("");
 // 添加标签相关的变量
 const isAddTagDialogVisible = ref(false);
 const newTagName = ref("");
+
+// 筛选后的笔记列表
+const filteredNotes = computed(() => {
+  let result = notes.value;
+
+  // 1. 按分类筛选
+  if (selectedCategoryId.value !== "-1") {
+    result = result.filter(
+      (note) => note.categoryId === selectedCategoryId.value
+    );
+  }
+
+  // 2. 按标签筛选（笔记必须包含所有选中的标签）
+  if (selectedTagsList.value.length > 0) {
+    result = result.filter((note) => {
+      if (!note.tags || note.tags.length === 0) return false;
+      return selectedTagsList.value.every((selectedTag) =>
+        note.tags.includes(selectedTag)
+      );
+    });
+  }
+
+  // 3. 按搜索关键词筛选（标题或内容包含关键词）
+  if (searchKeyword.value.trim()) {
+    const keyword = searchKeyword.value.trim().toLowerCase();
+    result = result.filter(
+      (note) =>
+        note.title.toLowerCase().includes(keyword) ||
+        note.content.toLowerCase().includes(keyword)
+    );
+  }
+
+  return result;
+});
 
 // 切换到卡片模式
 const switchToGridMode = () => {
@@ -304,6 +330,16 @@ const handleAddTag = () => {
     isAddTagDialogVisible.value = false;
   }
 };
+
+// 处理分类变化
+const handleCategoryChange = (categoryId: string) => {
+  selectedCategoryId.value = categoryId;
+};
+
+// 处理标签变化
+const handleTagsChange = (tags: string[]) => {
+  selectedTagsList.value = tags;
+};
 </script>
 
 <style scoped>
@@ -318,7 +354,8 @@ const handleAddTag = () => {
 .category-panel {
   width: 226px;
   background-color: #fff;
-  box-shadow: 1px 0 4px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 1px 0 4px rgba(0, 0, 0, 0.1); */
+  border-right: 1px solid #e5e7eb;
 }
 
 .category-header {
@@ -353,7 +390,7 @@ const handleAddTag = () => {
 }
 
 .right-content {
-  width: 100%;
+  width: calc(100% - 227px);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -373,7 +410,8 @@ const handleAddTag = () => {
 .notes-content {
   flex: 1;
   overflow: hidden;
-  padding: 20px;
+  /*  padding: 20px;*/
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
 }
